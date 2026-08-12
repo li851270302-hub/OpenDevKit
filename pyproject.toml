@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opendevkit"
+version = "0.1.0"
+description = "A local-first CLI for code analysis, maintenance automation, security checks, and AI-assisted review."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "li851270302-hub" }]
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+  "openai>=1.0",
+  "python-dotenv>=1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0"
+]
+
+[project.scripts]
+opendev = "opendevkit.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["opendevkit*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
