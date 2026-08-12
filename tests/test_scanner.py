@@ -15,7 +15,7 @@ def test_analyze_repo(tmp_path: Path):
 
 
 def test_detects_hardcoded_secret(tmp_path: Path):
-    source = 'API_KEY = "12345678901234567890"\n'
+    source = 'API_KEY = "' + ("x" * 20) + '"\n'
     (tmp_path / "config.py").write_text(source, encoding="utf-8")
 
     findings = scan_security(tmp_path)
