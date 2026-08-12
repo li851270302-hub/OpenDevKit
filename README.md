@@ -1,5 +1,7 @@
 # OpenDevKit
 
+[![Tests](https://github.com/li851270302-hub/OpenDevKit/actions/workflows/tests.yml/badge.svg)](https://github.com/li851270302-hub/OpenDevKit/actions/workflows/tests.yml)
+
 OpenDevKit is a local-first Python CLI for practical software maintenance. It helps developers inspect a repository, run lightweight security checks, review code with an optional OpenAI API integration, generate test ideas, and prepare maintenance reports.
 
 ## Features
