@@ -7,7 +7,9 @@ OpenDevKit is a local-first Python CLI for practical software maintenance. It he
 ## Features
 
 - `analyze` — inspect repository structure, languages, file counts, and likely entry points.
-- `security` — run a conservative static scan for common secret, unsafe subprocess, path-handling, and dependency risks.
+- `security` — run a conservative static scan for common secret, unsafe subprocess, path-handling, and untrusted-instruction risks.
+- `deps` — inspect Python and Node.js dependency manifests for non-exact versions and parse problems.
+- `prompt-scan` — flag repository text that may try to manipulate an AI-assisted maintenance workflow.
 - `review` — send selected source files to an OpenAI model for code review.
 - `test` — generate focused test plans from the current repository.
 - `docs` — generate a README draft from repository metadata.
@@ -48,18 +50,24 @@ The OpenAI Python SDK is used through the Responses API.
 ```bash
 opendev analyze .
 opendev security .
+opendev deps .
+opendev prompt-scan .
 opendev report . --output maintenance-report.md
 opendev review . --path opendevkit/security.py
 opendev test .
 opendev docs .
 ```
 
-For JSON output:
+For machine-readable output:
 
 ```bash
 opendev analyze . --json
 opendev security . --json
+opendev deps . --json
+opendev prompt-scan . --json
 ```
+
+Dependency findings are advisory. A non-exact version is reported for review but does not prove a vulnerable package. Untrusted-instruction findings are also heuristic and should be validated by a human.
 
 ## Security model
 
@@ -70,7 +78,8 @@ OpenDevKit is intentionally conservative:
 3. The CLI does not run arbitrary commands supplied by an LLM.
 4. API keys are read from environment variables and are never written to reports.
 5. AI review is optional and sends only the selected files plus a bounded repository summary.
-6. Users should review generated suggestions before applying changes.
+6. Dependency and untrusted-instruction findings are explainable heuristics for human review.
+7. Users should review generated suggestions before applying changes.
 
 This project is designed as a maintenance assistant, not an autonomous code execution agent.
 
@@ -79,6 +88,9 @@ This project is designed as a maintenance assistant, not an autonomous code exec
 ```bash
 pip install -e ".[dev]"
 pytest -q
+opendev security .
+opendev deps . --json
+opendev prompt-scan . --json
 ```
 
 ## License
