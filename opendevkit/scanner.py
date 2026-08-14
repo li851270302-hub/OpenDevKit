@@ -1,7 +1,11 @@
 from pathlib import Path
 import json
 import re
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 compatibility
+    import tomli as tomllib
 
 from .models import Finding, RepoSummary
 
