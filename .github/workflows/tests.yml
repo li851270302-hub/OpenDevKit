@@ -19,3 +19,5 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest -q
       - run: opendev security .
+      - run: opendev deps . --json
+      - run: opendev prompt-scan . --json
