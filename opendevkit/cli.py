@@ -8,7 +8,7 @@ from rich.table import Table
 from . import __version__
 from .ai import ask
 from .report import build_report
-from .scanner import analyze_repo, scan_security
+from .scanner import analyze_repo, scan_dependencies, scan_security, scan_untrusted_instructions
 
 app = typer.Typer(help="OpenDevKit: local-first developer maintenance assistant.")
 console = Console()
@@ -21,6 +21,29 @@ def _root(path: Path) -> Path:
     return path
 
 
+def _show_findings(findings, title: str, as_json: bool = False):
+    if as_json:
+        typer.echo(json.dumps([{
+            "rule": f.rule,
+            "severity": f.severity,
+            "path": f.path,
+            "line": f.line,
+            "message": f.message,
+        } for f in findings], indent=2))
+        return
+    if not findings:
+        console.print("[green]No findings detected.[/green]")
+        return
+    table = Table(title=f"{title} ({len(findings)})")
+    table.add_column("Severity")
+    table.add_column("Rule")
+    table.add_column("Location")
+    table.add_column("Message")
+    for f in findings:
+        table.add_row(f.severity, f.rule, f"{f.path}:{f.line or '-'}", f.message)
+    console.print(table)
+
+
 @app.command()
 def version():
     """Show the installed version."""
@@ -28,26 +51,13 @@ def version():
 
 
 @app.command()
-def analyze(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-    as_json: bool = typer.Option(False, "--json"),
-):
+def analyze(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
     """Inspect repository structure without executing repository code."""
     root = _root(path)
     summary = analyze_repo(root)
-
     if as_json:
-        typer.echo(json.dumps({
-            "root": summary.root,
-            "files": summary.files,
-            "directories": summary.directories,
-            "bytes": summary.total_bytes,
-            "languages": summary.languages,
-            "by_extension": summary.by_extension,
-            "entry_points": summary.entry_points,
-        }, indent=2))
+        typer.echo(json.dumps({"root": summary.root, "files": summary.files, "directories": summary.directories, "bytes": summary.total_bytes, "languages": summary.languages, "by_extension": summary.by_extension, "entry_points": summary.entry_points}, indent=2))
         return
-
     table = Table(title="Repository analysis")
     table.add_column("Metric")
     table.add_column("Value")
@@ -60,43 +70,25 @@ def analyze(
 
 
 @app.command()
-def security(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-    as_json: bool = typer.Option(False, "--json"),
-):
+def security(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
     """Run conservative local security heuristics; never execute repository code."""
-    root = _root(path)
-    findings = scan_security(root)
-
-    if as_json:
-        typer.echo(json.dumps([{
-            "rule": f.rule,
-            "severity": f.severity,
-            "path": f.path,
-            "line": f.line,
-            "message": f.message,
-        } for f in findings], indent=2))
-        return
-
-    if not findings:
-        console.print("[green]No findings detected by the local ruleset.[/green]")
-        return
-
-    table = Table(title=f"Security findings ({len(findings)})")
-    table.add_column("Severity")
-    table.add_column("Rule")
-    table.add_column("Location")
-    table.add_column("Message")
-    for f in findings:
-        table.add_row(f.severity, f.rule, f"{f.path}:{f.line or '-'}", f.message)
-    console.print(table)
+    _show_findings(scan_security(_root(path)), "Security findings", as_json)
 
 
 @app.command()
-def report(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-    output: Path = typer.Option("opendevkit-report.md", "--output", "-o"),
-):
+def deps(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
+    """Inspect dependency manifests for non-exact versions and parse problems."""
+    _show_findings(scan_dependencies(_root(path)), "Dependency findings", as_json)
+
+
+@app.command("prompt-scan")
+def prompt_scan(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
+    """Flag repository text that may try to manipulate an AI-assisted maintenance workflow."""
+    _show_findings(scan_untrusted_instructions(_root(path)), "Untrusted-instruction findings", as_json)
+
+
+@app.command()
+def report(path: Path = typer.Argument(".", exists=True, file_okay=False), output: Path = typer.Option("opendevkit-report.md", "--output", "-o")):
     """Generate a Markdown maintenance report."""
     root = _root(path)
     output.write_text(build_report(root), encoding="utf-8")
@@ -104,10 +96,7 @@ def report(
 
 
 @app.command()
-def review(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-    file_path: Path | None = typer.Option(None, "--path", "-p"),
-):
+def review(path: Path = typer.Argument(".", exists=True, file_okay=False), file_path: Path | None = typer.Option(None, "--path", "-p")):
     """Use the OpenAI API for an advisory code review."""
     root = _root(path)
     if file_path:
@@ -118,21 +107,15 @@ def review(
 
 
 @app.command()
-def test(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-):
+def test(path: Path = typer.Argument(".", exists=True, file_okay=False)):
     """Generate a focused test plan using the OpenAI API."""
-    root = _root(path)
-    console.print(ask(root, "Create a prioritized test plan. Include unit, integration, regression, and security-relevant cases. Do not write files."))
+    console.print(ask(_root(path), "Create a prioritized test plan. Include unit, integration, regression, and security-relevant cases. Do not write files."))
 
 
 @app.command()
-def docs(
-    path: Path = typer.Argument(".", exists=True, file_okay=False),
-):
+def docs(path: Path = typer.Argument(".", exists=True, file_okay=False)):
     """Generate a README improvement draft using the OpenAI API."""
-    root = _root(path)
-    console.print(ask(root, "Draft concise README improvements covering purpose, installation, usage, architecture, security model, and contribution workflow. Do not claim facts not present in the repository."))
+    console.print(ask(_root(path), "Draft concise README improvements covering purpose, installation, usage, architecture, security model, and contribution workflow. Do not claim facts not present in the repository."))
 
 
 if __name__ == "__main__":
