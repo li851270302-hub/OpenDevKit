@@ -13,7 +13,7 @@ OpenDevKit is a local-first Python CLI for practical software maintenance. It he
 - `review` — send selected source files to an OpenAI model for code review.
 - `test` — generate focused test plans from the current repository.
 - `docs` — generate a README draft from repository metadata.
-- `report` — combine local analysis and security findings into a Markdown report.
+- `report` — combine local analysis, security findings, and dependency findings into a Markdown report.
 
 OpenDevKit does **not** execute generated code, install dependencies, modify files, or run arbitrary shell commands. AI-assisted commands are advisory by default.
 
@@ -53,9 +53,15 @@ opendev security .
 opendev deps .
 opendev prompt-scan .
 opendev report . --output maintenance-report.md
-opendev review . --path opendevkit/security.py
+opendev review . --path opendevkit/scanner.py
 opendev test .
 opendev docs .
+```
+
+To review only one file, pass a repository-relative path. OpenDevKit still includes a bounded repository summary, but only the selected file is added as source context:
+
+```bash
+opendev review . --path opendevkit/scanner.py
 ```
 
 For machine-readable output:
