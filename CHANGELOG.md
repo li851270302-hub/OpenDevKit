@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 - 2026-08-18
+
+- Fixed `review --path` so only the selected file is added to AI source context.
+- Added clear errors for review paths outside the repository or paths that are not files.
+- Added dependency findings to Markdown maintenance reports.
+- Added CLI, AI-context, and report tests without calling the live OpenAI API.
+
+
 ## 0.2.0 - 2026-08-14
 
 - Added dependency manifest scanning for Python and Node.js projects.
