@@ -1,6 +1,6 @@
+import re
 from pathlib import Path
 
-from click import unstyle
 from typer.testing import CliRunner
 
 from opendevkit import cli as cli_module
@@ -8,6 +8,11 @@ from opendevkit.cli import app
 
 
 runner = CliRunner()
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def plain_output(output: str) -> str:
+    return ANSI_ESCAPE.sub("", output)
 
 
 def test_review_passes_selected_file(tmp_path: Path, monkeypatch):
@@ -49,7 +54,7 @@ def test_review_rejects_directory_path(tmp_path: Path):
     result = runner.invoke(app, ["review", str(tmp_path), "--path", "folder"])
 
     assert result.exit_code != 0
-    assert "--path must point to an existing file" in unstyle(result.output)
+    assert "--path must point to an existing file" in plain_output(result.output)
 
 
 def test_review_rejects_path_outside_repository(tmp_path: Path):
@@ -59,4 +64,4 @@ def test_review_rejects_path_outside_repository(tmp_path: Path):
     result = runner.invoke(app, ["review", str(tmp_path), "--path", str(outside)])
 
     assert result.exit_code != 0
-    assert "--path must stay inside the repository" in unstyle(result.output)
+    assert "--path must stay inside the repository" in plain_output(result.output)
