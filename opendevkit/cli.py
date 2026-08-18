@@ -99,11 +99,19 @@ def report(path: Path = typer.Argument(".", exists=True, file_okay=False), outpu
 def review(path: Path = typer.Argument(".", exists=True, file_okay=False), file_path: Path | None = typer.Option(None, "--path", "-p")):
     """Use the OpenAI API for an advisory code review."""
     root = _root(path)
+    selected_paths = None
     if file_path:
         candidate = (root / file_path).resolve()
-        if root not in candidate.parents and candidate != root:
+        if root not in candidate.parents:
             raise typer.BadParameter("--path must stay inside the repository.")
-    console.print(ask(root, "Perform a focused code review. Prioritize correctness, maintainability, security, and test gaps."))
+        if not candidate.is_file():
+            raise typer.BadParameter("--path must point to an existing file.")
+        selected_paths = [candidate]
+    console.print(ask(
+        root,
+        "Perform a focused code review. Prioritize correctness, maintainability, security, and test gaps.",
+        selected_paths=selected_paths,
+    ))
 
 
 @app.command()
