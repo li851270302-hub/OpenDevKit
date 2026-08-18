@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from click import unstyle
 from typer.testing import CliRunner
 
 from opendevkit import cli as cli_module
@@ -48,7 +49,7 @@ def test_review_rejects_directory_path(tmp_path: Path):
     result = runner.invoke(app, ["review", str(tmp_path), "--path", "folder"])
 
     assert result.exit_code != 0
-    assert "--path must point to an existing file" in result.output
+    assert "--path must point to an existing file" in unstyle(result.output)
 
 
 def test_review_rejects_path_outside_repository(tmp_path: Path):
@@ -58,4 +59,4 @@ def test_review_rejects_path_outside_repository(tmp_path: Path):
     result = runner.invoke(app, ["review", str(tmp_path), "--path", str(outside)])
 
     assert result.exit_code != 0
-    assert "--path must stay inside the repository" in result.output
+    assert "--path must stay inside the repository" in unstyle(result.output)
