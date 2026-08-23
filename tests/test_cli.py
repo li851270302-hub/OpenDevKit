@@ -126,11 +126,12 @@ def test_prompt_scan_medium_threshold_returns_exit_one(tmp_path: Path):
 
     result = runner.invoke(
         app,
-        ["prompt-scan", str(tmp_path), "--fail-on", "medium"],
+        ["prompt-scan", str(tmp_path), "--json", "--fail-on", "medium"],
     )
 
     assert result.exit_code == 1
-    assert "prompt-sensitive-file-read" in plain_output(result.output)
+    findings = json.loads(result.output)
+    assert any(item["rule"] == "prompt-sensitive-file-read" for item in findings)
 
 
 def test_json_output_is_emitted_before_threshold_failure(tmp_path: Path):
