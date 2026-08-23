@@ -21,7 +21,29 @@ def _root(path: Path) -> Path:
     return path
 
 
-def _show_findings(findings, title: str, as_json: bool = False):
+SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3}
+
+
+def _failure_threshold(fail_on: str | None) -> int | None:
+    if fail_on is None:
+        return None
+    normalized = fail_on.lower()
+    if normalized not in SEVERITY_RANK:
+        raise typer.BadParameter("--fail-on must be one of: low, medium, high.")
+    return SEVERITY_RANK[normalized]
+
+
+def _show_findings(
+    findings,
+    title: str,
+    as_json: bool = False,
+    fail_on: str | None = None,
+):
+    threshold = _failure_threshold(fail_on)
+    should_fail = threshold is not None and any(
+        SEVERITY_RANK.get(f.severity.lower(), 0) >= threshold for f in findings
+    )
+
     if as_json:
         typer.echo(json.dumps([{
             "rule": f.rule,
@@ -30,18 +52,20 @@ def _show_findings(findings, title: str, as_json: bool = False):
             "line": f.line,
             "message": f.message,
         } for f in findings], indent=2))
-        return
-    if not findings:
+    elif not findings:
         console.print("[green]No findings detected.[/green]")
-        return
-    table = Table(title=f"{title} ({len(findings)})")
-    table.add_column("Severity")
-    table.add_column("Rule")
-    table.add_column("Location")
-    table.add_column("Message")
-    for f in findings:
-        table.add_row(f.severity, f.rule, f"{f.path}:{f.line or '-'}", f.message)
-    console.print(table)
+    else:
+        table = Table(title=f"{title} ({len(findings)})")
+        table.add_column("Severity")
+        table.add_column("Rule")
+        table.add_column("Location")
+        table.add_column("Message")
+        for f in findings:
+            table.add_row(f.severity, f.rule, f"{f.path}:{f.line or '-'}", f.message)
+        console.print(table)
+
+    if should_fail:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -70,21 +94,38 @@ def analyze(path: Path = typer.Argument(".", exists=True, file_okay=False), as_j
 
 
 @app.command()
-def security(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
+def security(
+    path: Path = typer.Argument(".", exists=True, file_okay=False),
+    as_json: bool = typer.Option(False, "--json"),
+    fail_on: str | None = typer.Option(None, "--fail-on"),
+):
     """Run conservative local security heuristics; never execute repository code."""
-    _show_findings(scan_security(_root(path)), "Security findings", as_json)
+    _show_findings(scan_security(_root(path)), "Security findings", as_json, fail_on)
 
 
 @app.command()
-def deps(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
+def deps(
+    path: Path = typer.Argument(".", exists=True, file_okay=False),
+    as_json: bool = typer.Option(False, "--json"),
+    fail_on: str | None = typer.Option(None, "--fail-on"),
+):
     """Inspect dependency manifests for non-exact versions and parse problems."""
-    _show_findings(scan_dependencies(_root(path)), "Dependency findings", as_json)
+    _show_findings(scan_dependencies(_root(path)), "Dependency findings", as_json, fail_on)
 
 
 @app.command("prompt-scan")
-def prompt_scan(path: Path = typer.Argument(".", exists=True, file_okay=False), as_json: bool = typer.Option(False, "--json")):
+def prompt_scan(
+    path: Path = typer.Argument(".", exists=True, file_okay=False),
+    as_json: bool = typer.Option(False, "--json"),
+    fail_on: str | None = typer.Option(None, "--fail-on"),
+):
     """Flag repository text that may try to manipulate an AI-assisted maintenance workflow."""
-    _show_findings(scan_untrusted_instructions(_root(path)), "Untrusted-instruction findings", as_json)
+    _show_findings(
+        scan_untrusted_instructions(_root(path)),
+        "Untrusted-instruction findings",
+        as_json,
+        fail_on,
+    )
 
 
 @app.command()

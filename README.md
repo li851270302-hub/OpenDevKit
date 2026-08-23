@@ -10,6 +10,7 @@ OpenDevKit is a local-first Python CLI for practical software maintenance. It he
 - `security` — run a conservative static scan for common secret, unsafe subprocess, path-handling, and untrusted-instruction risks.
 - `deps` — inspect Python and Node.js dependency manifests for non-exact versions and parse problems.
 - `prompt-scan` — flag repository text that may try to manipulate an AI-assisted maintenance workflow.
+- `--fail-on` — make security scans CI-enforceable at a selected severity while preserving advisory defaults.
 - `review` — send selected source files to an OpenAI model for code review.
 - `test` — generate focused test plans from the current repository.
 - `docs` — generate a README draft from repository metadata.
@@ -52,6 +53,9 @@ opendev analyze .
 opendev security .
 opendev deps .
 opendev prompt-scan .
+opendev security . --fail-on high
+opendev deps . --fail-on low
+opendev prompt-scan . --fail-on medium
 opendev report . --output maintenance-report.md
 opendev review . --path opendevkit/scanner.py
 opendev test .
@@ -73,7 +77,9 @@ opendev deps . --json
 opendev prompt-scan . --json
 ```
 
-Dependency findings are advisory. A non-exact version is reported for review but does not prove a vulnerable package. Untrusted-instruction findings are also heuristic and should be validated by a human.
+By default, scan findings are advisory and the commands exit successfully. For CI enforcement, pass `--fail-on low`, `--fail-on medium`, or `--fail-on high`; a finding at the selected severity or higher exits with status 1 after normal table or JSON output is emitted.
+
+Dependency findings remain heuristic: a non-exact version is reported for review but does not prove a vulnerable package. Untrusted-instruction findings should also be validated by a human.
 
 ## Security model
 
@@ -94,9 +100,9 @@ This project is designed as a maintenance assistant, not an autonomous code exec
 ```bash
 pip install -e ".[dev]"
 pytest -q
-opendev security .
-opendev deps . --json
-opendev prompt-scan . --json
+opendev security . --fail-on high
+opendev deps . --json --fail-on medium
+opendev prompt-scan . --json --fail-on medium
 ```
 
 ## License
