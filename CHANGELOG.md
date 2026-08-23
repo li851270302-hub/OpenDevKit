@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-08-23
+
+- Added `--fail-on low|medium|high` to `security`, `deps`, and `prompt-scan` for CI enforcement.
+- Preserved advisory exit behavior when no threshold is selected.
+- Ensured human-readable and JSON results are emitted before a threshold failure exits with status 1.
+- Added tests for passing, failing, JSON, and invalid-threshold behavior.
+
+
 ## 0.2.1 - 2026-08-18
 
 - Fixed `review --path` so only the selected file is added to AI source context.
