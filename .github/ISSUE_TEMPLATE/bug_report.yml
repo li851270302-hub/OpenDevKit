@@ -1,0 +1,39 @@
+name: Bug or installation problem
+description: Report a reproducible failure or false positive with sanitized details.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Do not post secrets, private code, or sensitive reports. For vulnerabilities, read SECURITY.md first.
+  - type: input
+    id: version
+    attributes:
+      label: OpenDevKit version
+      description: Output of opendev version, or the version you tried to install.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and Python version
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps and command
+      description: Include the installation method and the smallest safe example that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior or sanitized error
+    validations:
+      required: true

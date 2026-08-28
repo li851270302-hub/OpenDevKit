@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1 - 2026-08-28
+
+- Added wheel and source-distribution build checks, clean-environment installation checks, and a Windows test job.
+- Added a GitHub release workflow that publishes only artifacts from a successful main-branch test run.
+- Added an opt-in PyPI Trusted Publishing workflow for already-published release artifacts.
+- Added SPDX license metadata and project links for package indexes.
+- Fixed installation instructions to include obtaining the source or release wheel.
+- Added a local trial guide, bug reports, and honest usage-feedback templates.
+- Clarified that reports write files and that optional AI review does not automatically redact secrets.
+
 ## 0.3.0 - 2026-08-23
 
 - Added `--fail-on low|medium|high` to `security`, `deps`, and `prompt-scan` for CI enforcement.
