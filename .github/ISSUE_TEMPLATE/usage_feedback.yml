@@ -1,0 +1,39 @@
+name: Usage feedback
+description: Share your own trial results, including problems or reasons not to use it.
+title: "[Feedback]: "
+body:
+  - type: markdown
+    attributes:
+      value: Feedback is voluntary. No Star or positive review is required. Only describe a trial you actually performed, and omit private details.
+  - type: input
+    id: version
+    attributes:
+      label: OpenDevKit version, OS, and Python version
+    validations:
+      required: true
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Your relationship to this project
+      options:
+        - Independent user trying the project
+        - Maintainer or contributor testing the project
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you actually tried
+      description: Installation method, commands, and project type. Public repository links are optional.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What worked, failed, or was confusing?
+    validations:
+      required: true
+  - type: textarea
+    id: next
+    attributes:
+      label: Would you use it again? What would need to change?

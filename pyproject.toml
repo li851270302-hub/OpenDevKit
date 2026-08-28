@@ -1,15 +1,28 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "opendevkit"
-version = "0.3.0"
+version = "0.3.1"
 description = "A local-first CLI for code analysis, maintenance automation, security checks, and AI-assisted review."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "li851270302-hub" }]
+keywords = ["cli", "code-review", "static-analysis", "developer-tools"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Quality Assurance"
+]
 dependencies = [
   "typer>=0.12",
   "rich>=13.7",
@@ -17,6 +30,12 @@ dependencies = [
   "python-dotenv>=1.0",
   "tomli>=2.0; python_version < '3.11'"
 ]
+
+[project.urls]
+Homepage = "https://github.com/li851270302-hub/OpenDevKit"
+Repository = "https://github.com/li851270302-hub/OpenDevKit"
+Issues = "https://github.com/li851270302-hub/OpenDevKit/issues"
+Changelog = "https://github.com/li851270302-hub/OpenDevKit/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

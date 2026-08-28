@@ -1,0 +1,97 @@
+name: GitHub Release
+
+on:
+  workflow_run:
+    workflows: [tests]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Never publish artifacts from pull requests or from another repository.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read the tested version and release notes
+        id: metadata
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import tomllib
+
+          version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+              raise SystemExit("Only stable version tags are published by this workflow.")
+          heading = f"## {version} - "
+          changelog = Path("CHANGELOG.md").read_text()
+          if heading not in changelog:
+              raise SystemExit("The version needs a changelog entry.")
+          notes = changelog.split(heading, 1)[1].split("\n## ", 1)[0]
+          notes = notes.split("\n", 1)[1].strip()
+          Path(os.environ["RUNNER_TEMP"], "release-notes.md").write_text(
+              f"## OpenDevKit {version}\n\n{notes}\n\n"
+              "Install the attached wheel in a virtual environment. "
+              "This is an early-stage heuristic maintenance tool, not a security audit. "
+              "PyPI publication is a separate step.\n\n"
+              "Validation: Python 3.10–3.12 on Linux, Python 3.12 on Windows, "
+              "distribution metadata checks, and a clean wheel installation smoke test. "
+              "No live OpenAI API calls are included in these checks.\n"
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"tag=v{version}\n")
+          PY
+      - uses: actions/download-artifact@v5
+        with:
+          name: distributions
+          path: ${{ runner.temp }}/release-packages
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Verify package checksums
+        working-directory: ${{ runner.temp }}/release-packages
+        run: sha256sum --check SHA256SUMS
+      - name: Publish the tested packages without replacing existing releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          state=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft 2>/dev/null || true)
+          if [ "$state" = "false" ]; then
+            echo "The release already exists; no files will be overwritten."
+            exit 0
+          fi
+          if [ "$state" = "true" ]; then
+            echo "An existing draft needs maintainer review before retrying."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            "$RUNNER_TEMP"/release-packages/*.whl \
+            "$RUNNER_TEMP"/release-packages/*.tar.gz \
+            "$RUNNER_TEMP"/release-packages/SHA256SUMS \
+            --target "$TESTED_SHA" --draft \
+            --title "OpenDevKit $RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$RELEASE_TAG" --draft=false
