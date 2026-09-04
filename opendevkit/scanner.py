@@ -65,7 +65,7 @@ def analyze_repo(root: Path) -> RepoSummary:
         counts[ext] = counts.get(ext, 0) + 1
 
         if path.name in {"main.py", "app.py", "cli.py", "manage.py", "__main__.py"}:
-            entries.append(str(path.relative_to(root)))
+            entries.append(path.relative_to(root).as_posix())
 
     for path in root.rglob("*"):
         if path.is_dir() and not is_excluded(root, path, config):
@@ -95,7 +95,7 @@ def scan_untrusted_instructions(
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        rel = str(path.relative_to(root))
+        rel = path.relative_to(root).as_posix()
         for line_no, line in enumerate(text.splitlines(), 1):
             for rule, pattern in UNTRUSTED_INSTRUCTION_PATTERNS:
                 if pattern.search(line):
@@ -187,7 +187,7 @@ def scan_security(root: Path) -> list[Finding]:
             continue
 
         lines = text.splitlines()
-        rel = str(path.relative_to(root))
+        rel = path.relative_to(root).as_posix()
 
         for line_no, line in enumerate(lines, 1):
             for rule, pattern in SECRET_PATTERNS:

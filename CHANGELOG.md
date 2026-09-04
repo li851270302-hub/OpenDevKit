@@ -4,6 +4,7 @@
 
 - Added optional `.opendevkit.toml` repository configuration with validated, repository-relative exclusion patterns.
 - Applied configured exclusions consistently to analysis, security, dependency, prompt, report, and repository-wide AI context paths.
+- Normalized reported repository-relative paths to POSIX separators on every operating system.
 - Kept built-in ignored directories active and explicit `review --path` selection available.
 - Skipped symbolic links during repository-wide traversal and rejected symlinked configuration files.
 - Added visible exclusion metadata to analysis output, reports, and AI context.

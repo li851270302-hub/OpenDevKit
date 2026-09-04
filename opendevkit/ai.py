@@ -43,7 +43,7 @@ def _repo_context(
         for path in selected_paths:
             candidate = path.resolve()
             if root in candidate.parents and candidate.is_file():
-                selected_names.append(str(candidate.relative_to(root)))
+                selected_names.append(candidate.relative_to(root).as_posix())
         parts.append(f"Selected source files: {', '.join(selected_names) or 'none'}")
 
     source_budget = max_chars - sum(len(x) + 1 for x in parts)
@@ -66,7 +66,7 @@ def _repo_context(
         except OSError:
             continue
         snippet = text[:4000]
-        block = f"\n--- {path.relative_to(root)} ---\n{snippet}\n"
+        block = f"\n--- {path.relative_to(root).as_posix()} ---\n{snippet}\n"
         if len(block) > source_budget:
             break
         parts.append(block)
