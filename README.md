@@ -44,7 +44,7 @@ Activate it using the command for your shell:
 | macOS/Linux | `source .venv/bin/activate` |
 
 ```bash
-python -m pip install ./opendevkit-0.3.1-py3-none-any.whl
+python -m pip install ./opendevkit-0.4.0-py3-none-any.whl
 opendev version
 opendev --help
 ```
@@ -104,6 +104,36 @@ opendev deps . --json
 opendev prompt-scan . --json
 ```
 
+## Repository configuration
+
+Add an optional `.opendevkit.toml` at the repository root to exclude generated,
+vendored, or fixture paths from repository-wide analysis:
+
+```toml
+[scan]
+exclude = [
+  "fixtures/**",
+  "generated/**",
+  "*.min.js",
+]
+```
+
+Patterns are case-sensitive, relative to the repository, and use `/` on every operating system.
+A pattern ending in `/**` excludes that directory and everything below it. A
+pattern without `/` matches a file or directory name at any depth. Absolute and
+parent-relative patterns are rejected. Built-in exclusions such as `.git`,
+`.venv`, `node_modules`, `dist`, and `build` always remain active. Symbolic
+links are skipped, and the configuration file itself remains visible to scans.
+
+Configuration exclusions apply to `analyze`, `security`, `deps`, `prompt-scan`,
+`report`, and repository-wide AI context. An explicit `review --path` still
+includes the selected file. `analyze` and `report` disclose active project
+patterns so reviewers can see the scan boundary.
+
+Because a repository controls its own configuration, treat changes to
+`.opendevkit.toml` as security-policy changes. Exclusions can hide findings;
+they are a noise-control mechanism, not proof that excluded code is safe.
+
 By default, scan findings are advisory and the commands exit successfully. For CI enforcement, pass `--fail-on low`, `--fail-on medium`, or `--fail-on high`; a finding at the selected severity or higher exits with status 1 after normal table or JSON output is emitted.
 
 Dependency findings remain heuristic: a non-exact version is reported for review but does not prove a vulnerable package. Untrusted-instruction findings should also be validated by a human.
@@ -119,6 +149,7 @@ OpenDevKit is intentionally conservative:
 5. AI review is optional and sends only the selected files plus a bounded repository summary.
 6. Dependency and untrusted-instruction findings are explainable heuristics for human review.
 7. Users should review generated suggestions before applying changes.
+8. Repository exclusions are visible but trusted as configuration; reviewers should inspect them before relying on scan results.
 
 This project is designed as a maintenance assistant, not an autonomous code execution agent.
 

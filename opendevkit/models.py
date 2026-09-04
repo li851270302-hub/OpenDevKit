@@ -20,6 +20,7 @@ class RepoSummary:
     directories: int = 0
     entry_points: list[str] = field(default_factory=list)
     total_bytes: int = 0
+    config_excludes: list[str] = field(default_factory=list)
 
     @property
     def languages(self) -> list[str]:
