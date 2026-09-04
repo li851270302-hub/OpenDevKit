@@ -32,6 +32,7 @@ def build_report(root: Path) -> str:
         f"- Total size: {summary.total_bytes:,} bytes",
         f"- Languages: {', '.join(summary.languages) or 'Unknown'}",
         f"- Entry points: {', '.join(summary.entry_points) or 'None detected'}",
+        f"- Config excludes: {', '.join(f'`{pattern}`' for pattern in summary.config_excludes) or 'None'}",
     ]
 
     _append_findings(lines, "Security findings", security_findings)

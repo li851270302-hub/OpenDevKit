@@ -7,7 +7,7 @@ try:
 except ImportError:
     pass
 
-from .scanner import analyze_repo, scan_security
+from .scanner import analyze_repo, iter_files, scan_security
 
 
 def _client():
@@ -32,6 +32,7 @@ def _repo_context(
         f"Files: {summary.files}; directories: {summary.directories}; bytes: {summary.total_bytes}",
         f"Languages: {', '.join(summary.languages) or 'unknown'}",
         f"Likely entry points: {', '.join(summary.entry_points) or 'none detected'}",
+        f"Configured exclusions: {', '.join(summary.config_excludes) or 'none'}",
         "Security findings:",
     ]
     for item in findings[:40]:
@@ -49,12 +50,12 @@ def _repo_context(
     if source_budget <= 0:
         return "\n".join(parts)
 
-    candidates = selected_paths if selected_paths is not None else sorted(root.rglob("*"))
+    candidates = selected_paths if selected_paths is not None else sorted(iter_files(root))
     for path in candidates:
         path = path.resolve()
         if root not in path.parents:
             continue
-        if not path.is_file() or ".git" in path.parts or ".venv" in path.parts:
+        if not path.is_file():
             continue
         if selected_paths is None and path.suffix.lower() not in {
             ".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java"

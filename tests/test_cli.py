@@ -156,3 +156,15 @@ def test_invalid_fail_on_value_fails_clearly(tmp_path: Path):
 
     assert result.exit_code != 0
     assert "--fail-on must be one of" in plain_output(result.output)
+
+
+def test_invalid_project_config_fails_clearly(tmp_path: Path):
+    (tmp_path / ".opendevkit.toml").write_text(
+        '[scan]\nexclude = "generated/**"\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["analyze", str(tmp_path)])
+
+    assert result.exit_code != 0
+    assert "scan.exclude must be an array" in plain_output(result.output)

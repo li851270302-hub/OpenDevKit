@@ -7,6 +7,7 @@ from rich.table import Table
 
 from . import __version__
 from .ai import ask
+from .config import ConfigurationError, load_config
 from .report import build_report
 from .scanner import analyze_repo, scan_dependencies, scan_security, scan_untrusted_instructions
 
@@ -18,6 +19,10 @@ def _root(path: Path) -> Path:
     path = path.expanduser().resolve()
     if not path.exists() or not path.is_dir():
         raise typer.BadParameter(f"Not a directory: {path}")
+    try:
+        load_config(path)
+    except ConfigurationError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     return path
 
 
@@ -80,7 +85,7 @@ def analyze(path: Path = typer.Argument(".", exists=True, file_okay=False), as_j
     root = _root(path)
     summary = analyze_repo(root)
     if as_json:
-        typer.echo(json.dumps({"root": summary.root, "files": summary.files, "directories": summary.directories, "bytes": summary.total_bytes, "languages": summary.languages, "by_extension": summary.by_extension, "entry_points": summary.entry_points}, indent=2))
+        typer.echo(json.dumps({"root": summary.root, "files": summary.files, "directories": summary.directories, "bytes": summary.total_bytes, "languages": summary.languages, "by_extension": summary.by_extension, "entry_points": summary.entry_points, "config_excludes": summary.config_excludes}, indent=2))
         return
     table = Table(title="Repository analysis")
     table.add_column("Metric")
@@ -90,6 +95,7 @@ def analyze(path: Path = typer.Argument(".", exists=True, file_okay=False), as_j
     table.add_row("Size", f"{summary.total_bytes:,} bytes")
     table.add_row("Languages", ", ".join(summary.languages) or "Unknown")
     table.add_row("Entry points", ", ".join(summary.entry_points) or "None detected")
+    table.add_row("Config excludes", ", ".join(summary.config_excludes) or "None")
     console.print(table)
 
 

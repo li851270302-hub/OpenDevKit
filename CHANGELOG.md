@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 - 2026-09-04
+
+- Added optional `.opendevkit.toml` repository configuration with validated, repository-relative exclusion patterns.
+- Applied configured exclusions consistently to analysis, security, dependency, prompt, report, and repository-wide AI context paths.
+- Kept built-in ignored directories active and explicit `review --path` selection available.
+- Skipped symbolic links during repository-wide traversal and rejected symlinked configuration files.
+- Added visible exclusion metadata to analysis output, reports, and AI context.
+- Added clear configuration errors and regression tests for exclusions and malformed settings.
+- Documented that repository-controlled exclusions can hide findings and require review.
+
 ## 0.3.1 - 2026-08-28
 
 - Added wheel and source-distribution build checks, clean-environment installation checks, and a Windows test job.

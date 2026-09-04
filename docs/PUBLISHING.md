@@ -13,7 +13,7 @@ python -m twine check --strict dist/*
 ```
 
 Install the wheel in a **new** virtual environment, then use that environment's
-Python to run `scripts/smoke_install.py 0.3.1`. It invokes the installed console
+Python to run `scripts/smoke_install.py 0.4.0`. It invokes the installed console
 command from a temporary directory, exercises the local commands and an expected
 high-severity failure, and never calls the OpenAI API.
 
@@ -59,14 +59,14 @@ and [publishing guide](https://docs.pypi.org/trusted-publishers/using-a-publishe
 ## Publish and verify
 
 1. In GitHub Actions, run **Publish to PyPI** on `main` with the already-published
-   release tag (for this version, `v0.3.1`). Approve the environment if prompted.
+   release tag (for this version, `v0.4.0`). Approve the environment if prompted.
 2. The workflow verifies release checksums, checks package metadata, and submits
    the same wheel and source archive using short-lived OIDC credentials.
 3. A green workflow is not enough: check the PyPI version, owner, and repository
-   links, then install `opendevkit==0.3.1` from PyPI in a fresh environment and run
+   links, then install `opendevkit==0.4.0` from PyPI in a fresh environment and run
    `opendev version` and `opendev analyze . --json`.
 4. Only after that verification should README's installation section recommend
-   `python -m pip install opendevkit==0.3.1`.
+   `python -m pip install opendevkit==0.4.0`.
 
 PyPI does not allow replacing a previously uploaded release file. Fix a bad
 release with a new version rather than attempting to overwrite it. Tests and

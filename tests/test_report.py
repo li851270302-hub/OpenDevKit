@@ -17,3 +17,21 @@ def test_report_includes_security_and_dependency_findings(tmp_path: Path):
     assert "possible-api-key" in report
     assert "## Dependency findings" in report
     assert "unpinned-dependency" in report
+
+
+def test_report_discloses_and_respects_project_exclusions(tmp_path: Path):
+    generated = tmp_path / "generated"
+    generated.mkdir()
+    (generated / "secret.py").write_text(
+        'API_KEY = "' + ("x" * 20) + '"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / ".opendevkit.toml").write_text(
+        '[scan]\nexclude = ["generated/**"]\n',
+        encoding="utf-8",
+    )
+
+    report = build_report(tmp_path)
+
+    assert "Config excludes: `generated/**`" in report
+    assert "possible-api-key" not in report

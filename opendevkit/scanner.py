@@ -8,11 +8,7 @@ except ModuleNotFoundError:  # Python 3.10 compatibility
     import tomli as tomllib
 
 from .models import Finding, RepoSummary
-
-IGNORED_DIRS = {
-    ".git", ".venv", "venv", "node_modules", "__pycache__",
-    ".pytest_cache", "dist", "build", ".mypy_cache", ".ruff_cache"
-}
+from .config import ProjectConfig, is_excluded, load_config
 TEXT_EXTENSIONS = {
     ".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java",
     ".cs", ".cpp", ".c", ".h", ".hpp", ".sh", ".ps1", ".yaml",
@@ -44,23 +40,25 @@ UNTRUSTED_INSTRUCTION_PATTERNS = [
 DEPENDENCY_FILES = {"requirements.txt", "requirements-dev.txt", "pyproject.toml", "package.json"}
 
 
-def iter_files(root: Path):
+def iter_files(root: Path, config: ProjectConfig | None = None):
+    config = config or load_config(root)
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in IGNORED_DIRS for part in path.parts):
+        if is_excluded(root, path, config):
             continue
         yield path
 
 
 def analyze_repo(root: Path) -> RepoSummary:
+    config = load_config(root)
     counts: dict[str, int] = {}
     total = 0
     files = 0
     dirs = 0
     entries = []
 
-    for path in iter_files(root):
+    for path in iter_files(root, config):
         files += 1
         total += path.stat().st_size
         ext = path.suffix.lower() or "[no extension]"
@@ -70,7 +68,7 @@ def analyze_repo(root: Path) -> RepoSummary:
             entries.append(str(path.relative_to(root)))
 
     for path in root.rglob("*"):
-        if path.is_dir() and not any(part in IGNORED_DIRS for part in path.parts):
+        if path.is_dir() and not is_excluded(root, path, config):
             dirs += 1
 
     return RepoSummary(
@@ -80,12 +78,17 @@ def analyze_repo(root: Path) -> RepoSummary:
         directories=dirs,
         entry_points=sorted(entries),
         total_bytes=total,
+        config_excludes=list(config.exclude),
     )
 
 
-def scan_untrusted_instructions(root: Path) -> list[Finding]:
+def scan_untrusted_instructions(
+    root: Path,
+    config: ProjectConfig | None = None,
+) -> list[Finding]:
+    config = config or load_config(root)
     findings: list[Finding] = []
-    for path in iter_files(root):
+    for path in iter_files(root, config):
         if path.suffix.lower() not in {".md", ".txt", ".yaml", ".yml", ".json", ".toml"}:
             continue
         try:
@@ -112,11 +115,12 @@ def _version_is_pinned(spec: str) -> bool:
 
 
 def scan_dependencies(root: Path) -> list[Finding]:
+    config = load_config(root)
     findings: list[Finding] = []
 
     for name in ("requirements.txt", "requirements-dev.txt"):
         path = root / name
-        if not path.exists():
+        if not path.exists() or is_excluded(root, path, config):
             continue
         for line_no, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             spec = line.strip()
@@ -128,7 +132,7 @@ def scan_dependencies(root: Path) -> list[Finding]:
                 ))
 
     pyproject = root / "pyproject.toml"
-    if pyproject.exists():
+    if pyproject.exists() and not is_excluded(root, pyproject, config):
         try:
             data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
             deps = data.get("project", {}).get("dependencies", []) or []
@@ -149,7 +153,7 @@ def scan_dependencies(root: Path) -> list[Finding]:
             ))
 
     package_json = root / "package.json"
-    if package_json.exists():
+    if package_json.exists() and not is_excluded(root, package_json, config):
         try:
             data = json.loads(package_json.read_text(encoding="utf-8"))
             for section in ("dependencies", "devDependencies", "optionalDependencies"):
@@ -170,9 +174,10 @@ def scan_dependencies(root: Path) -> list[Finding]:
 
 
 def scan_security(root: Path) -> list[Finding]:
+    config = load_config(root)
     findings: list[Finding] = []
 
-    for path in iter_files(root):
+    for path in iter_files(root, config):
         if path.suffix.lower() not in TEXT_EXTENSIONS and path.name not in {".env", "Dockerfile"}:
             continue
 
@@ -208,5 +213,5 @@ def scan_security(root: Path) -> list[Finding]:
                     "Possible flow from external input into file operations; review for path traversal.",
                 ))
 
-    findings.extend(scan_untrusted_instructions(root))
+    findings.extend(scan_untrusted_instructions(root, config))
     return findings
