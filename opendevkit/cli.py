@@ -9,6 +9,7 @@ from . import __version__
 from .ai import ask
 from .config import ConfigurationError, load_config
 from .report import build_report
+from .sarif import write_sarif
 from .scanner import analyze_repo, scan_dependencies, scan_security, scan_untrusted_instructions
 
 app = typer.Typer(help="OpenDevKit: local-first developer maintenance assistant.")
@@ -43,11 +44,15 @@ def _show_findings(
     title: str,
     as_json: bool = False,
     fail_on: str | None = None,
+    sarif_output: Path | None = None,
 ):
     threshold = _failure_threshold(fail_on)
     should_fail = threshold is not None and any(
         SEVERITY_RANK.get(f.severity.lower(), 0) >= threshold for f in findings
     )
+
+    if sarif_output is not None:
+        write_sarif(sarif_output, findings)
 
     if as_json:
         typer.echo(json.dumps([{
@@ -104,9 +109,16 @@ def security(
     path: Path = typer.Argument(".", exists=True, file_okay=False),
     as_json: bool = typer.Option(False, "--json"),
     fail_on: str | None = typer.Option(None, "--fail-on"),
+    sarif_output: Path | None = typer.Option(None, "--sarif", dir_okay=False),
 ):
     """Run conservative local security heuristics; never execute repository code."""
-    _show_findings(scan_security(_root(path)), "Security findings", as_json, fail_on)
+    _show_findings(
+        scan_security(_root(path)),
+        "Security findings",
+        as_json,
+        fail_on,
+        sarif_output,
+    )
 
 
 @app.command()
@@ -114,9 +126,16 @@ def deps(
     path: Path = typer.Argument(".", exists=True, file_okay=False),
     as_json: bool = typer.Option(False, "--json"),
     fail_on: str | None = typer.Option(None, "--fail-on"),
+    sarif_output: Path | None = typer.Option(None, "--sarif", dir_okay=False),
 ):
     """Inspect dependency manifests for non-exact versions and parse problems."""
-    _show_findings(scan_dependencies(_root(path)), "Dependency findings", as_json, fail_on)
+    _show_findings(
+        scan_dependencies(_root(path)),
+        "Dependency findings",
+        as_json,
+        fail_on,
+        sarif_output,
+    )
 
 
 @app.command("prompt-scan")
@@ -124,6 +143,7 @@ def prompt_scan(
     path: Path = typer.Argument(".", exists=True, file_okay=False),
     as_json: bool = typer.Option(False, "--json"),
     fail_on: str | None = typer.Option(None, "--fail-on"),
+    sarif_output: Path | None = typer.Option(None, "--sarif", dir_okay=False),
 ):
     """Flag repository text that may try to manipulate an AI-assisted maintenance workflow."""
     _show_findings(
@@ -131,6 +151,7 @@ def prompt_scan(
         "Untrusted-instruction findings",
         as_json,
         fail_on,
+        sarif_output,
     )
 
 

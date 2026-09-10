@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 - 2026-09-10
+
+- Added optional SARIF 2.1.0 output for `security`, `deps`, and `prompt-scan`.
+- Mapped OpenDevKit high, medium, and low findings to SARIF error, warning, and note levels.
+- Included repository-relative artifact locations and source lines for code-scanning annotations.
+- Preserved normal console or JSON output and ensured SARIF is written before `--fail-on` exits.
+- Added regression tests for populated and empty SARIF reports, URI encoding, and threshold failures.
+- Documented GitHub Code Scanning integration and its required workflow permissions.
+
 ## 0.4.0 - 2026-09-04
 
 - Added optional `.opendevkit.toml` repository configuration with validated, repository-relative exclusion patterns.
