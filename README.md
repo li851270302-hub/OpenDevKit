@@ -11,6 +11,7 @@ OpenDevKit is a local-first Python CLI for practical software maintenance. It he
 - `deps` — inspect Python and Node.js dependency manifests for non-exact versions and parse problems.
 - `prompt-scan` — flag repository text that may try to manipulate an AI-assisted maintenance workflow.
 - `--fail-on` — make security scans CI-enforceable at a selected severity while preserving advisory defaults.
+- `--sarif` — export scan findings as SARIF 2.1.0 for GitHub Code Scanning and compatible tools.
 - `review` — send selected source files to an OpenAI model for code review.
 - `test` — generate focused test plans from the current repository.
 - `docs` — generate a README draft from repository metadata.
@@ -44,7 +45,7 @@ Activate it using the command for your shell:
 | macOS/Linux | `source .venv/bin/activate` |
 
 ```bash
-python -m pip install ./opendevkit-0.4.0-py3-none-any.whl
+python -m pip install ./opendevkit-0.5.0-py3-none-any.whl
 opendev version
 opendev --help
 ```
@@ -83,6 +84,7 @@ opendev prompt-scan .
 opendev security . --fail-on high
 opendev deps . --fail-on low
 opendev prompt-scan . --fail-on medium
+opendev security . --sarif opendevkit.sarif --fail-on high
 opendev report . --output maintenance-report.md
 opendev review . --path opendevkit/scanner.py
 opendev test .
@@ -103,6 +105,37 @@ opendev security . --json
 opendev deps . --json
 opendev prompt-scan . --json
 ```
+
+### SARIF and GitHub Code Scanning
+
+The three scan commands can write SARIF 2.1.0 while keeping their normal console
+or JSON output. The report is written before a `--fail-on` threshold exits, so a
+CI job can upload findings even when the quality gate fails:
+
+```bash
+opendev security . --sarif opendevkit.sarif --fail-on high
+```
+
+Upload the file in GitHub Actions with GitHub's CodeQL action:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+steps:
+  - uses: actions/checkout@v4
+  - run: pip install opendevkit
+  - run: opendev security . --sarif opendevkit.sarif --fail-on high
+    continue-on-error: true
+  - uses: github/codeql-action/upload-sarif@v3
+    with:
+      sarif_file: opendevkit.sarif
+```
+
+Code Scanning availability and permissions depend on the repository and GitHub
+plan. SARIF changes how findings are transported, not their confidence: all
+OpenDevKit results remain heuristic and require human review.
 
 ## Repository configuration
 
